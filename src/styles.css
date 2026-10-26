@@ -12,8 +12,11 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: auto; }
-html.lenis, html.lenis body { height: auto; }
+html.lenis, html.lenis body {
+  -webkit-tap-highlight-color: transparent; height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
+
+html { overflow-x: clip; }
 
 body {
   background: var(--paper);
@@ -140,7 +143,7 @@ body.no-gl .hero::before, body.reduced .hero::before {
 #build { background: rgba(234, 233, 228, 0.72); }
 
 /* gallery */
-.gallery { margin-top: 6vh; }
+.gallery { margin-top: 6vh; overflow: hidden; overflow: clip; }
 .gallery-track { display: flex; gap: clamp(1.5rem, 4vw, 4rem); width: max-content; padding-right: 20vw; padding-top: 4.5rem; will-change: transform; }
 .card { width: min(68vw, 600px); flex-shrink: 0; }
 .card--end { width: 40vw; display: grid; place-items: center; }
@@ -242,6 +245,7 @@ body.no-gl .hero::before, body.reduced .hero::before {
 .cursor.is-link .cursor-ring { width: 56px; height: 56px; border-color: var(--ultra); }
 .cursor.is-hold .cursor-ring { width: 80px; height: 80px; border-color: var(--ultra); }
 body.touch .cursor { display: none; }
+body.touch .grain { animation: none; }
 
 /* reveal primitives */
 .reveal .w { display: inline-block; overflow: hidden; vertical-align: top; }
@@ -251,8 +255,10 @@ body.touch .cursor { display: none; }
   .card { width: 84vw; }
   .card-meta { flex-direction: column; gap: 0.3rem; }
   .essay { grid-template-columns: 1fr; grid-template-areas: "title" "desc" "year"; }
-    .site-nav { gap: 1rem; }
-  .site-nav a { font-size: 0.82rem; }
+    .wordmark { font-size: 0.95rem; white-space: nowrap; }
+  .site-nav { gap: 0.75rem; }
+  .site-nav a { font-size: 0.8rem; }
+  body.touch .site-nav a { padding: 0.4rem 0.2rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -268,7 +274,7 @@ body.touch .cursor { display: none; }
   z-index: 25; pointer-events: none;
 }
 /* while ink is held, the page cannot select text */
-body.ink-holding { user-select: none; -webkit-user-select: none; }
+body.ink-holding { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 
 /* substack profile link */
 .essay-more {

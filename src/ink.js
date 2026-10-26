@@ -172,7 +172,7 @@ export async function createInk(canvas) {
     const w = canvas.clientWidth || window.innerWidth;
     const h = canvas.clientHeight || window.innerHeight;
     vw = w; vh = h;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 1.75));
     renderer.setSize(w, h, false);
     camera.left = -w / 2; camera.right = w / 2;
     camera.top = h / 2; camera.bottom = -h / 2;
@@ -185,18 +185,30 @@ export async function createInk(canvas) {
   function toWorld(e) {
     return { x: e.clientX - vw / 2, y: -(e.clientY - vh / 2) };
   }
-  function onMove(e) { const p = toWorld(e); mouse.tx = p.x; mouse.ty = p.y; }
+  let touchStart = null;
+  let scrollCancel = false;
+  function onMove(e) {
+    const p = toWorld(e); mouse.tx = p.x; mouse.ty = p.y;
+    if (e.pointerType === 'touch' && touchStart && state.holdV > 0) {
+      const dx = e.clientX - touchStart.x, dy = e.clientY - touchStart.y;
+      if (dx * dx + dy * dy > 144) { // moved: it is a scroll, not a hold
+        state.holdV = 0; touchStart = null; scrollCancel = true;
+        document.body.classList.remove('ink-holding');
+      }
+    }
+  }
   function onLeave() { mouse.tx = 9999; mouse.ty = 9999; }
   let holdEl = null;
   let ret = 0; // return-vortex envelope: set to 1 on release, decays
   function onDown(e) {
     if (e.target.closest && e.target.closest('a, button, input, textarea, select')) return;
+    if (e.pointerType === 'touch') touchStart = { x: e.clientX, y: e.clientY };
     state.holdV = 1; holdEl = e.target;
     document.body.classList.add('ink-holding');
   }
   function onUp() {
-    if (state.holdV > 0.05) ret = 1;
-    state.holdV = 0; holdEl = null;
+    if (state.holdV > 0.05 && !scrollCancel) ret = 1;
+    state.holdV = 0; holdEl = null; touchStart = null; scrollCancel = false;
     document.body.classList.remove('ink-holding');
   }
   window.addEventListener('pointermove', onMove, { passive: true });
