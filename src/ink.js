@@ -82,8 +82,10 @@ export async function createInk(canvas) {
     await document.fonts.ready;
   } catch (e) { /* fall back to sampled system font */ }
 
-  const isMobile = window.innerWidth < 768;
-  const COUNT = isMobile ? 7000 : 16000;
+  // device tiers: phones, tablets/small laptops, large screens
+  const tier = window.innerWidth < 768 ? 0 : window.innerWidth < 1200 ? 1 : 2;
+  const COUNT = [6000, 11000, 16000][tier];
+  const DPR_CAPS = [1.5, 1.6, 1.75];
 
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -10, 10);
@@ -172,7 +174,7 @@ export async function createInk(canvas) {
     const w = canvas.clientWidth || window.innerWidth;
     const h = canvas.clientHeight || window.innerHeight;
     vw = w; vh = h;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, DPR_CAPS[tier]));
     renderer.setSize(w, h, false);
     camera.left = -w / 2; camera.right = w / 2;
     camera.top = h / 2; camera.bottom = -h / 2;
@@ -189,7 +191,10 @@ export async function createInk(canvas) {
   let scrollCancel = false;
   function onMove(e) {
     const p = toWorld(e); mouse.tx = p.x; mouse.ty = p.y;
-    if (e.pointerType === 'touch' && touchStart && state.holdV > 0) {
+    // outside the ink stage a moving touch is a scroll, not a hold;
+    // inside the stage the drag IS the play
+    const inStage = e.target && e.target.closest && e.target.closest('.ink-stage');
+    if (e.pointerType === 'touch' && touchStart && state.holdV > 0 && !inStage) {
       const dx = e.clientX - touchStart.x, dy = e.clientY - touchStart.y;
       if (dx * dx + dy * dy > 144) { // moved: it is a scroll, not a hold
         state.holdV = 0; touchStart = null; scrollCancel = true;

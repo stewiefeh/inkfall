@@ -13,10 +13,11 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: auto; }
 html.lenis, html.lenis body {
-  -webkit-tap-highlight-color: transparent; height: auto; }
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 
-html { overflow-x: clip; }
+html { overflow-x: clip; overscroll-behavior-y: none; }
 
 body {
   background: var(--paper);
@@ -75,7 +76,8 @@ body.no-gl #ink, body.reduced #ink { display: none; }
 .site-head {
   position: fixed; top: 0; left: 0; right: 0; z-index: 30;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1.1rem var(--pad);
+  padding: max(1.1rem, env(safe-area-inset-top)) max(var(--pad), env(safe-area-inset-right));
+  padding-left: max(var(--pad), env(safe-area-inset-left));
 }
 .wordmark {
   font-family: var(--disp); font-weight: 650; font-size: 1.05rem;
@@ -109,8 +111,21 @@ main { position: relative; z-index: 2; }
 /* hero */
 .hero {
   min-height: 100svh; display: flex; flex-direction: column;
-  justify-content: flex-end; padding: 0 var(--pad) 2.2rem; position: relative;
+  justify-content: flex-end;
+  padding: 0 max(var(--pad), env(safe-area-inset-left)) calc(2.2rem + env(safe-area-inset-bottom));
+  padding-right: max(var(--pad), env(safe-area-inset-right)); position: relative;
 }
+
+/* ink playground: fills the hero above the copy; touches here play with the
+   ink instead of scrolling the page */
+.ink-stage {
+  flex: 1 1 auto; touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  margin-left: calc(-1 * max(var(--pad), env(safe-area-inset-left)));
+  margin-right: calc(-1 * max(var(--pad), env(safe-area-inset-right)));
+  margin-top: calc(-1 * max(1.1rem, env(safe-area-inset-top)));
+}
+.hero-end { flex-shrink: 0; }
 .hero-sub {
   font-size: clamp(1.05rem, 1.6vw, 1.3rem); max-width: 30rem; color: var(--ink-soft);
   margin-bottom: 1.2rem;
