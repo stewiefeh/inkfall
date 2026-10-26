@@ -93,3 +93,10 @@ lets-talk) with screenshots:
   card width 72vw/640 -> 68vw/600. Plus a paper scrim so sliding content fades under the nav.
 - Verified in headless Chromium: 3.2s vigorous hold (zout stayed 0), no text selection,
   settled rms 7 back to formed name, contact rms 0, zero page errors.
+
+## Polish pass, Oct 26 evening 2
+- Essay hover preview (floating image on Write rows) removed per request: block in main.js,
+  figure in index.html, rules in styles.css, and the now-unused cover-notes.png dropped.
+  Hover feedback on essay rows is the existing indent + ultramarine rule.
+- Header scrim deepened (120px, solid to 55%) so section heads sliding under the fixed nav
+  fade out instead of colliding with the wordmark. Verified on the Write section.

@@ -145,35 +145,6 @@ if (gallery && !reduced) {
   });
 }
 
-// ---------- essay hover preview ----------
-const essays = document.querySelector('[data-essays]');
-const preview = document.querySelector('.essay-preview');
-if (essays && preview && !isTouch) {
-  const img = preview.querySelector('img');
-  const srcs = [
-    '/img/cover-notes.png',
-    '/img/cover-sites.png',
-    '/img/cover-game.png',
-  ];
-  const setX = gsap.quickTo(preview, 'x', { duration: 0.45, ease: 'power3' });
-  const setY = gsap.quickTo(preview, 'y', { duration: 0.45, ease: 'power3' });
-  let shown = false;
-  essays.addEventListener('pointermove', (e) => {
-    setX(e.clientX + 24); setY(e.clientY - 120);
-  });
-  essays.querySelectorAll('.essay').forEach((row, i) => {
-    row.addEventListener('mouseenter', () => {
-      img.src = srcs[i % srcs.length];
-      if (!shown) { gsap.to(preview, { opacity: 1, scale: 1, duration: 0.4, ease: 'power3.out' }); shown = true; }
-    });
-  });
-  essays.addEventListener('mouseleave', () => {
-    gsap.to(preview, { opacity: 0, scale: 0.96, duration: 0.3, ease: 'power2.in' });
-    shown = false;
-  });
-  gsap.set(preview, { scale: 0.96 });
-}
-
 // ---------- custom cursor ----------
 if (!isTouch) {
   const cursor = document.createElement('div');
