@@ -163,7 +163,7 @@ export async function createInk(canvas) {
   const points = new THREE.Points(geo, material);
   scene.add(points);
 
-  const state = { morph: 0, assemble: 0, hold: 0, holdV: 0, running: true };
+  const state = { morph: 0, assemble: 0, hold: 0, holdV: 0, turb: 0, running: true };
   const mouse = { x: 9999, y: 9999, tx: 9999, ty: 9999 };
   let vw = 1, vh = 1;
 
@@ -253,6 +253,13 @@ export async function createInk(canvas) {
         const f2 = (180 - d) / 180;
         vx += (dx / d) * f2 * 2.4;
         vy += (dy / d) * f2 * 2.4;
+      }
+      // scroll turbulence: fast scrolling drags the ink upward and sideways
+      if (state.turb > 0.01) {
+        const tr = state.turb;
+        vy -= tr * (0.4 + s * 1.1) * 1.5;
+        vx += Math.sin(t * 7 + s * 47 + py * 0.01) * tr * 0.8;
+        vy += Math.cos(t * 5.5 + s * 31 + px * 0.01) * tr * 0.4;
       }
       // hold: spill outward with noise
       if (hold > 0.01) {

@@ -55,8 +55,16 @@ if (!reduced) {
   gsap.ticker.add((time) => lenis.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
   // render loop for ink runs on the same ticker
+  let turbSmooth = 0;
   gsap.ticker.add(() => {
-    if (ink && inkState && inkState.running) ink.frame(gsap.ticker.deltaRatio(60) / 60);
+    if (ink && inkState && inkState.running) {
+      if (lenis && inkState.turb !== undefined) {
+        const target = Math.min(1.2, Math.abs(lenis.velocity || 0) / 70);
+        turbSmooth += (target - turbSmooth) * 0.12;
+        inkState.turb = turbSmooth;
+      }
+      ink.frame(gsap.ticker.deltaRatio(60) / 60);
+    }
   });
   window.addEventListener('resize', () => ink && ink.resize());
 }
