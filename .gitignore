@@ -1,6 +1,9 @@
 node_modules/
 dist/
+dist2/
 shots/
-shot.mjs
-shot2.mjs
-shot3.mjs
+shot*.mjs
+probe*.mjs
+probe/
+frames*/
+rec.mp4
