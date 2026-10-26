@@ -84,7 +84,7 @@ export async function createInk(canvas) {
 
   // device tiers: phones, tablets/small laptops, large screens
   const tier = window.innerWidth < 768 ? 0 : window.innerWidth < 1200 ? 1 : 2;
-  const COUNT = [6000, 11000, 16000][tier];
+  const COUNT = [7000, 13000, 19000][tier];
   const DPR_CAPS = [1.5, 1.6, 1.75];
 
   const scene = new THREE.Scene();
@@ -97,11 +97,18 @@ export async function createInk(canvas) {
     const s = sampleText(spec.lines, 800, spec.tracking);
     targets.push(s);
   }
-  // per particle: pick points from each target (wrap around)
+  // per particle: a shuffled, uniform-random subset of each target's points.
+  // a fixed stride rasterizes into visible diagonal bands; a shuffle does not.
   const tgt = targets.map((t) => {
+    const idx = new Uint32Array(t.count);
+    for (let n = 0; n < t.count; n++) idx[n] = n;
+    for (let n = t.count - 1; n > 0; n--) { // Fisher-Yates
+      const r = (Math.random() * (n + 1)) | 0;
+      const tmp = idx[n]; idx[n] = idx[r]; idx[r] = tmp;
+    }
     const arr = new Float32Array(COUNT * 2);
     for (let i = 0; i < COUNT; i++) {
-      const j = (i * 7919) % t.count; // prime stride for spread
+      const j = idx[i % t.count];
       arr[i * 2] = t.pts[j * 2];
       arr[i * 2 + 1] = t.pts[j * 2 + 1];
     }
@@ -154,10 +161,13 @@ export async function createInk(canvas) {
       varying float vVel; varying float vSeed;
       void main() {
         vec2 d = gl_PointCoord - 0.5;
-        float m = smoothstep(0.5, 0.28, length(d));
+        float m = smoothstep(0.5, 0.24, length(d));
         if (m < 0.01) discard;
-        vec3 col = mix(uInk, uUltra, clamp(vVel * 2.2, 0.0, 1.0) * 0.9);
-        float a = m * (0.55 + 0.45 * fract(vSeed * 7.13));
+        // a few particles carry ultramarine even at rest: flecks of blue in the ink
+        float fleck = step(0.965, fract(vSeed * 3.71));
+        float vmix = max(clamp(vVel * 2.2, 0.0, 1.0) * 0.9, fleck * 0.75);
+        vec3 col = mix(uInk, uUltra, vmix);
+        float a = m * (0.72 + 0.28 * fract(vSeed * 7.13));
         gl_FragColor = vec4(col, a);
       }`,
   });
@@ -179,7 +189,7 @@ export async function createInk(canvas) {
     camera.left = -w / 2; camera.right = w / 2;
     camera.top = h / 2; camera.bottom = -h / 2;
     camera.updateProjectionMatrix();
-    uniforms.uScale.value = (h / 900) * (renderer.getPixelRatio()) * 2.1;
+    uniforms.uScale.value = (h / 900) * (renderer.getPixelRatio()) * 3.4;
   }
   resize();
 
