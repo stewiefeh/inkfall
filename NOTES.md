@@ -100,3 +100,10 @@ lets-talk) with screenshots:
   Hover feedback on essay rows is the existing indent + ultramarine rule.
 - Header scrim deepened (120px, solid to 55%) so section heads sliding under the fixed nav
   fade out instead of colliding with the wordmark. Verified on the Write section.
+
+## Deploy procedure note (learned the hard way)
+Never deploy with a copy-into-cwd chain: a failed cd once copied dist/* into the project
+root, overwriting the source index.html with a built one and freezing the CSS bundle at a
+stale hash for several builds. Always deploy via `git worktree add /tmp/ghdeploy gh-pages`,
+`git rm -rq .`, copy fresh dist, commit, push. Source of truth is src/, verified by
+checking dist CSS content (not just the hash) after every build.
