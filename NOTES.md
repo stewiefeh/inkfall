@@ -78,3 +78,18 @@ lets-talk) with screenshots:
   work-carousel URLs.
 - An it/en-style gate is not needed; a dark mode variant of the ink could
   be a fun toggle.
+
+## Fix pass, Oct 26 evening (video bug report)
+- ROOT CAUSE of "ink never comes back": the press-and-hold spill pushed particles on z with
+  no restoring force, and the ortho camera's depth window is only [-10, 10]. A 3s hold drove
+  z past 10, so every particle was permanently clipped behind the camera plane. Now: z gets
+  the same spring as x/y, and the hold bulge is bounded (target z = 3*hold, capped).
+- Return redesigned per request: on release a return-vortex envelope (ret) starts; each
+  particle spirals home on its own stagger (delay by seed), slight overshoot via a softer
+  damping during the return. Hold now also stirs the ink tangentially around the press point.
+- Hold no longer selects text: body.ink-holding class sets user-select none.
+- Hardening: points.frustumCulled = false, per-particle NaN self-heal, velocity clamp.
+- Gallery clip fix: track padding-top 4.5rem (cards clear the fixed header during the pin),
+  card width 72vw/640 -> 68vw/600. Plus a paper scrim so sliding content fades under the nav.
+- Verified in headless Chromium: 3.2s vigorous hold (zout stayed 0), no text selection,
+  settled rms 7 back to formed name, contact rms 0, zero page errors.

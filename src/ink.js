@@ -161,6 +161,7 @@ export async function createInk(canvas) {
   });
 
   const points = new THREE.Points(geo, material);
+  points.frustumCulled = false;
   scene.add(points);
 
   const state = { morph: 0, assemble: 0, hold: 0, holdV: 0, turb: 0, running: true };
@@ -187,11 +188,17 @@ export async function createInk(canvas) {
   function onMove(e) { const p = toWorld(e); mouse.tx = p.x; mouse.ty = p.y; }
   function onLeave() { mouse.tx = 9999; mouse.ty = 9999; }
   let holdEl = null;
+  let ret = 0; // return-vortex envelope: set to 1 on release, decays
   function onDown(e) {
     if (e.target.closest && e.target.closest('a, button, input, textarea, select')) return;
     state.holdV = 1; holdEl = e.target;
+    document.body.classList.add('ink-holding');
   }
-  function onUp() { state.holdV = 0; holdEl = null; }
+  function onUp() {
+    if (state.holdV > 0.05) ret = 1;
+    state.holdV = 0; holdEl = null;
+    document.body.classList.remove('ink-holding');
+  }
   window.addEventListener('pointermove', onMove, { passive: true });
   window.addEventListener('pointerdown', onDown, { passive: true });
   window.addEventListener('pointerup', onUp, { passive: true });
@@ -206,13 +213,14 @@ export async function createInk(canvas) {
     mouse.x += (mouse.tx - mouse.x) * 0.18;
     mouse.y += (mouse.ty - mouse.y) * 0.18;
     state.hold += (state.holdV - state.hold) * (state.holdV > state.hold ? 0.08 : 0.045);
+    if (ret > 0) ret = Math.max(0, ret - dt * 1.7);
 
     const m = Math.max(0, Math.min(state.morph, targets.length - 1));
     const i0 = Math.floor(m), i1 = Math.min(i0 + 1, targets.length - 1);
     const fm = m - i0;
     const pos = geo.attributes.position.array;
     const velAttr = geo.attributes.aVel.array;
-    const damp = 0.8;
+    const damp = ret > 0.1 ? 0.85 : 0.8;
     const assemble = state.assemble;
     const hold = state.hold;
     const timeN = t * 0.55;
@@ -238,10 +246,13 @@ export async function createInk(canvas) {
       by = scatter[i * 2 + 1] * S * 1.2 + (by - scatter[i * 2 + 1] * S * 1.2) * aEase;
 
       let px = positions[ix], py = positions[iy];
+      let pz = positions[iz];
       // spring toward base
       let vx = velocities[ix], vy = velocities[iy], vz = velocities[iz];
       vx += (bx - px) * 0.085;
       vy += (by - py) * 0.085;
+      // z gets a spring too: spill drift used to escape the camera's depth window forever
+      vz += (0 - pz) * 0.085;
       // idle drift
       vx += Math.sin(timeN + s * 40.0 + px * 0.004) * 0.012;
       vy += Math.cos(timeN * 0.8 + s * 61.0 + py * 0.004) * 0.012;
@@ -267,12 +278,33 @@ export async function createInk(canvas) {
         const g = hold * (0.35 + s * 0.65);
         vx += (px / dd) * g * 2.6 + Math.sin(t * 3 + s * 90) * g;
         vy += (py / dd) * g * 2.6 + Math.cos(t * 2.4 + s * 70) * g;
-        vz += g * 0.4;
+        // stir: tangential swirl around the press point, like dragging a spoon through ink
+        vx += -dy * g * 0.0045;
+        vy += dx * g * 0.0045;
+        // ink bulges toward the viewer while held, bounded so it can never clip away
+        vz += ((3 * g) - pz) * 0.06;
+      }
+      // return vortex: each particle spirals home on its own stagger, slight overshoot
+      if (ret > 0.01) {
+        const dly = s * 0.5;
+        const rf = Math.max(0, Math.min(1, (1 - dly - ret) * 6));
+        if (rf > 0) {
+          const rx = px - bx, ry = py - by;
+          const sp = rf * ret * (0.7 + 0.5 * s) * 0.008;
+          vx += -ry * sp;
+          vy += rx * sp;
+        }
       }
       vx *= damp; vy *= damp; vz *= damp;
+      const vm = Math.sqrt(vx * vx + vy * vy + vz * vz);
+      if (vm > 90) { const k = 90 / vm; vx *= k; vy *= k; vz *= k; }
       px += vx; py += vy;
       positions[ix] = px; positions[iy] = py;
-      positions[iz] += vz * 0.1;
+      positions[iz] = pz + vz * 0.1;
+      if (!Number.isFinite(px) || !Number.isFinite(py) || !Number.isFinite(positions[iz])) {
+        positions[ix] = bx; positions[iy] = by; positions[iz] = 0;
+        velocities[ix] = 0; velocities[iy] = 0; velocities[iz] = 0;
+      }
       velocities[ix] = vx; velocities[iy] = vy; velocities[iz] = vz;
       const sp = Math.sqrt(vx * vx + vy * vy);
       velAttr[i] = Math.min(1, sp * 0.14);
@@ -285,6 +317,25 @@ export async function createInk(canvas) {
   document.addEventListener('visibilitychange', () => {
     state.running = !document.hidden;
   });
+
+  function debug() {
+    const m = Math.max(0, Math.min(state.morph, targets.length - 1));
+    const i0 = Math.floor(m), i1 = Math.min(i0 + 1, targets.length - 1);
+    const fm = m - i0;
+    const S = Math.min(vw * 0.46, vh * 0.42);
+    let sum = 0; let zout = 0;
+    for (let i = 0; i < COUNT; i++) {
+      const T0 = tgt[i0], T1 = tgt[i1];
+      const tx = (T0[i * 2] + (T1[i * 2] - T0[i * 2]) * fm) * S;
+      const ty = (T0[i * 2 + 1] + (T1[i * 2 + 1] - T0[i * 2 + 1]) * fm) * S * 0.86;
+      const dx = positions[i * 3] - tx, dy = positions[i * 3 + 1] - ty;
+      sum += dx * dx + dy * dy;
+      const zval = positions[i * 3 + 2];
+      if (zval > 9.5 || zval < -9.5) zout++;
+    }
+    return { morph: +state.morph.toFixed(3), assemble: +state.assemble.toFixed(3), hold: +state.hold.toFixed(3), rms: Math.round(Math.sqrt(sum / COUNT)), zout };
+  }
+  if (typeof window !== 'undefined') window.__inkDebug = debug;
 
   return {
     state,
