@@ -269,3 +269,12 @@ body.touch .cursor { display: none; }
 }
 /* while ink is held, the page cannot select text */
 body.ink-holding { user-select: none; -webkit-user-select: none; }
+
+/* substack profile link */
+.essay-more {
+  display: inline-block; margin: 2.5rem 0 0; font-size: 0.95rem; color: var(--ink);
+  text-decoration: none; border-bottom: 1px solid var(--ultra); padding-bottom: 0.15rem;
+  transition: color 0.3s ease;
+}
+.essay-more:hover, .essay-more:focus-visible { color: var(--ultra); }
+@media (prefers-reduced-motion: reduce) { .essay-more { transition: none; } }
